@@ -116,6 +116,7 @@ selected: str = st.selectbox(
     options=exercise_names,
     index=exercise_names.index(st.session_state.active_exercise),
     label_visibility="collapsed",
+    key=f"exercise_selector_{st.session_state.active_workout}",
 )
 
 # Reset progress whenever the user switches exercise
