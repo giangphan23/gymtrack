@@ -1,6 +1,7 @@
 import json
 import time
 from pathlib import Path
+from typing import Optional
 
 import streamlit as st
 
@@ -83,7 +84,7 @@ if "sets_done" not in st.session_state:
     st.session_state.sets_done: list[int] = []
 
 if "last_set_time" not in st.session_state:
-    st.session_state.last_set_time: float | None = None
+    st.session_state.last_set_time: Optional[float] = None
 
 # ── Title ─────────────────────────────────────────────────────────────────────
 st.title("🏋️ Simple Strength")
