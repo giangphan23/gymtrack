@@ -111,12 +111,16 @@ if st.session_state.active_exercise not in exercise_names:
     st.session_state.active_exercise = exercise_names[0]
 
 # ── Exercise selector ─────────────────────────────────────────────────────────
-selected: str = st.selectbox(
+selected: str | None = st.selectbox(
     "Exercise",
     options=exercise_names,
     index=exercise_names.index(st.session_state.active_exercise),
     label_visibility="collapsed",
+    key=f"exercise_selector_{st.session_state.active_workout}",
 )
+
+if selected is None or selected not in exercise_names:
+    selected = exercise_names[0]
 
 # Reset progress whenever the user switches exercise
 if selected != st.session_state.active_exercise:
