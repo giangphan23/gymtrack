@@ -1,32 +1,42 @@
 {
-  "Bench Press": {
-    "weight": 90,
-    "sets": 5,
-    "reps": 5,
-    "rest_seconds": 90
+  "Workout A": {
+    "Squat": {
+      "weight": 120,
+      "sets": 5,
+      "reps": 5,
+      "rest_seconds": 180
+    },
+    "Bench Press": {
+      "weight": 90,
+      "sets": 5,
+      "reps": 5,
+      "rest_seconds": 90
+    },
+    "Barbell Row": {
+      "weight": 80,
+      "sets": 5,
+      "reps": 5,
+      "rest_seconds": 90
+    }
   },
-  "Squat": {
-    "weight": 120,
-    "sets": 5,
-    "reps": 5,
-    "rest_seconds": 180
-  },
-  "Overhead Press": {
-    "weight": 60,
-    "sets": 5,
-    "reps": 5,
-    "rest_seconds": 90
-  },
-  "Deadlift": {
-    "weight": 140,
-    "sets": 1,
-    "reps": 5,
-    "rest_seconds": 240
-  },
-  "Barbell Row": {
-    "weight": 80,
-    "sets": 5,
-    "reps": 5,
-    "rest_seconds": 90
+  "Workout B": {
+    "Squat": {
+      "weight": 120,
+      "sets": 5,
+      "reps": 5,
+      "rest_seconds": 180
+    },
+    "Overhead Press": {
+      "weight": 60,
+      "sets": 5,
+      "reps": 5,
+      "rest_seconds": 90
+    },
+    "Deadlift": {
+      "weight": 140,
+      "sets": 1,
+      "reps": 5,
+      "rest_seconds": 240
+    }
   }
 }
