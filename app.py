@@ -119,6 +119,12 @@ selected: str = st.selectbox(
     key=f"exercise_selector_{st.session_state.active_workout}",
 )
 
+# Guard against None or stale selectbox session state for the current workout
+if not selected or selected not in config[st.session_state.active_workout]:
+    selected = first_exercise(st.session_state.active_workout)
+    st.session_state.active_exercise = selected
+    st.session_state[f"exercise_selector_{st.session_state.active_workout}"] = selected
+
 # Reset progress whenever the user switches exercise
 if selected != st.session_state.active_exercise:
     st.session_state.active_exercise = selected
