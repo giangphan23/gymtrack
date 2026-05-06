@@ -65,11 +65,19 @@ def load_config() -> dict:
 
 
 config = load_config()
-exercise_names = list(config.keys())
+workout_names = list(config.keys())
+
+
+def first_exercise(workout_name: str) -> str:
+    return list(config[workout_name].keys())[0]
+
 
 # ── Session-state initialisation ──────────────────────────────────────────────
+if "active_workout" not in st.session_state:
+    st.session_state.active_workout = workout_names[0]
+
 if "active_exercise" not in st.session_state:
-    st.session_state.active_exercise = exercise_names[0]
+    st.session_state.active_exercise = first_exercise(st.session_state.active_workout)
 
 if "sets_done" not in st.session_state:
     st.session_state.sets_done: list[int] = []
@@ -79,6 +87,28 @@ if "last_set_time" not in st.session_state:
 
 # ── Title ─────────────────────────────────────────────────────────────────────
 st.title("🏋️ Simple Strength")
+
+# ── Workout selector ──────────────────────────────────────────────────────────
+selected_workout: str = st.radio(
+    "Workout",
+    options=workout_names,
+    index=workout_names.index(st.session_state.active_workout),
+    horizontal=True,
+    label_visibility="collapsed",
+)
+
+# Reset progress whenever the user switches workout
+if selected_workout != st.session_state.active_workout:
+    st.session_state.active_workout = selected_workout
+    st.session_state.active_exercise = first_exercise(selected_workout)
+    st.session_state.sets_done = []
+    st.session_state.last_set_time = None
+
+exercise_names = list(config[st.session_state.active_workout].keys())
+
+# Ensure active_exercise is valid for the current workout
+if st.session_state.active_exercise not in exercise_names:
+    st.session_state.active_exercise = exercise_names[0]
 
 # ── Exercise selector ─────────────────────────────────────────────────────────
 selected: str = st.selectbox(
@@ -94,7 +124,7 @@ if selected != st.session_state.active_exercise:
     st.session_state.sets_done = []
     st.session_state.last_set_time = None
 
-ex = config[selected]
+ex = config[st.session_state.active_workout][selected]
 total_sets: int = ex["sets"]
 reps: int = ex["reps"]
 weight: float = ex["weight"]
