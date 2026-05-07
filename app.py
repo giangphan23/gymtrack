@@ -1,8 +1,12 @@
 import json
 import time
+import uuid
+from datetime import datetime, timezone
 from pathlib import Path
 
+import requests
 import streamlit as st
+from streamlit.errors import StreamlitSecretNotFoundError
 
 # ── Page config ──────────────────────────────────────────────────────────────
 st.set_page_config(
@@ -69,6 +73,53 @@ def save_config(updated_config: dict) -> None:
         json.dump(updated_config, fh, indent=2)
 
 
+def build_set_event_payload(
+    *,
+    session_id: str,
+    workout: str,
+    exercise: str,
+    set_number: int,
+    total_sets: int,
+    reps: int,
+    weight: float,
+    rest_seconds: int,
+    event_id: str,
+) -> dict:
+    return {
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "workout": workout,
+        "exercise": exercise,
+        "set_number": set_number,
+        "total_sets": total_sets,
+        "reps": reps,
+        "weight": weight,
+        "rest_seconds": rest_seconds,
+        "session_id": session_id,
+        "event_id": event_id,
+    }
+
+
+def log_set_to_gsheet(payload: dict) -> bool:
+    try:
+        webhook_url = st.secrets.get("gsheet_webhook_url")
+    except StreamlitSecretNotFoundError:
+        return False
+
+    if not webhook_url:
+        return False
+
+    # Retry once for transient network failures.
+    for _ in range(2):
+        try:
+            resp = requests.post(webhook_url, json=payload, timeout=3)
+            if resp.ok:
+                return True
+        except requests.RequestException:
+            continue
+
+    return False
+
+
 config = load_config()
 workout_names = list(config.keys())
 
@@ -85,10 +136,16 @@ if "active_exercise" not in st.session_state:
     st.session_state.active_exercise = first_exercise(st.session_state.active_workout)
 
 if "sets_done" not in st.session_state:
-    st.session_state.sets_done: list[int] = []
+    st.session_state.sets_done = []
 
 if "last_set_time" not in st.session_state:
-    st.session_state.last_set_time: float | None = None
+    st.session_state.last_set_time = None
+
+if "session_id" not in st.session_state:
+    st.session_state.session_id = str(uuid.uuid4())
+
+if "logged_event_ids" not in st.session_state:
+    st.session_state.logged_event_ids = set()
 
 # ── Title ─────────────────────────────────────────────────────────────────────
 st.title("🏋️ Simple Strength")
@@ -108,6 +165,7 @@ if selected_workout != st.session_state.active_workout:
     st.session_state.active_exercise = first_exercise(selected_workout)
     st.session_state.sets_done = []
     st.session_state.last_set_time = None
+    st.session_state.logged_event_ids = set()
 
 # ── Exercise editor ───────────────────────────────────────────────────────────
 with st.expander("Edit Exercises", expanded=False):
@@ -210,6 +268,7 @@ if selected != st.session_state.active_exercise:
     st.session_state.active_exercise = selected
     st.session_state.sets_done = []
     st.session_state.last_set_time = None
+    st.session_state.logged_event_ids = set()
 
 ex = config[st.session_state.active_workout][selected]
 total_sets: int = ex["sets"]
@@ -238,6 +297,25 @@ for i in range(total_sets):
         disabled=done,
         use_container_width=True,
     ):
+        event_id = (
+            f"{st.session_state.session_id}:"
+            f"{st.session_state.active_workout}:{selected}:{i + 1}"
+        )
+        if event_id not in st.session_state.logged_event_ids:
+            payload = build_set_event_payload(
+                session_id=st.session_state.session_id,
+                workout=st.session_state.active_workout,
+                exercise=selected,
+                set_number=i + 1,
+                total_sets=total_sets,
+                reps=reps,
+                weight=weight,
+                rest_seconds=rest_seconds,
+                event_id=event_id,
+            )
+            if log_set_to_gsheet(payload):
+                st.session_state.logged_event_ids.add(event_id)
+
         st.session_state.sets_done.append(i)
         st.session_state.last_set_time = time.time()
         st.rerun()
@@ -276,4 +354,5 @@ st.divider()
 if st.button("🔄 Reset Session", use_container_width=True):
     st.session_state.sets_done = []
     st.session_state.last_set_time = None
+    st.session_state.logged_event_ids = set()
     st.rerun()
