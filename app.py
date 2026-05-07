@@ -64,6 +64,11 @@ def load_config() -> dict:
         return json.load(fh)
 
 
+def save_config(updated_config: dict) -> None:
+    with open(CONFIG_PATH, "w", encoding="utf-8") as fh:
+        json.dump(updated_config, fh, indent=2)
+
+
 config = load_config()
 workout_names = list(config.keys())
 
@@ -103,6 +108,81 @@ if selected_workout != st.session_state.active_workout:
     st.session_state.active_exercise = first_exercise(selected_workout)
     st.session_state.sets_done = []
     st.session_state.last_set_time = None
+
+# ── Exercise editor ───────────────────────────────────────────────────────────
+with st.expander("Edit Exercises", expanded=False):
+    st.caption("Quickly add, rename, or update exercises for this workout.")
+
+    current_workout_data = config[st.session_state.active_workout]
+    editor_rows = [
+        {
+            "exercise": name,
+            "weight": details["weight"],
+            "sets": details["sets"],
+            "reps": details["reps"],
+            "rest_seconds": details["rest_seconds"],
+        }
+        for name, details in current_workout_data.items()
+    ]
+
+    edited_rows = st.data_editor(
+        editor_rows,
+        num_rows="dynamic",
+        use_container_width=True,
+        hide_index=True,
+        key=f"exercise_editor_{st.session_state.active_workout}",
+        column_config={
+            "exercise": st.column_config.TextColumn("Exercise", required=True),
+            "weight": st.column_config.NumberColumn("Weight (kg)", min_value=0.0, step=2.5),
+            "sets": st.column_config.NumberColumn("Sets", min_value=1, step=1),
+            "reps": st.column_config.NumberColumn("Reps", min_value=1, step=1),
+            "rest_seconds": st.column_config.NumberColumn("Rest (s)", min_value=0, step=5),
+        },
+    )
+
+    if st.button("Save Exercise Changes", use_container_width=True):
+        updated_workout: dict[str, dict] = {}
+        seen_names: set[str] = set()
+        validation_errors: list[str] = []
+
+        for idx, row in enumerate(edited_rows, start=1):
+            name = str(row.get("exercise", "")).strip()
+            if not name:
+                validation_errors.append(f"Row {idx}: exercise name cannot be empty.")
+                continue
+            if name in seen_names:
+                validation_errors.append(f"Row {idx}: duplicate exercise name '{name}'.")
+                continue
+            seen_names.add(name)
+
+            try:
+                updated_workout[name] = {
+                    "weight": float(row.get("weight", 0)),
+                    "sets": int(row.get("sets", 0)),
+                    "reps": int(row.get("reps", 0)),
+                    "rest_seconds": int(row.get("rest_seconds", 0)),
+                }
+            except (TypeError, ValueError):
+                validation_errors.append(f"Row {idx}: invalid numeric values.")
+
+        if not updated_workout:
+            validation_errors.append("A workout must have at least one exercise.")
+
+        if validation_errors:
+            for msg in validation_errors:
+                st.error(msg)
+        else:
+            config[st.session_state.active_workout] = updated_workout
+            save_config(config)
+            load_config.clear()
+
+            if st.session_state.active_exercise not in updated_workout:
+                st.session_state.active_exercise = next(iter(updated_workout))
+            st.session_state.sets_done = []
+            st.session_state.last_set_time = None
+
+            st.success("Exercise changes saved.")
+            st.rerun()
 
 exercise_names = list(config[st.session_state.active_workout].keys())
 

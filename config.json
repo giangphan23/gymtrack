@@ -1,22 +1,28 @@
 {
   "Workout A": {
     "Squat": {
-      "weight": 120,
+      "weight": 120.0,
       "sets": 5,
       "reps": 5,
       "rest_seconds": 180
     },
     "Bench Press": {
-      "weight": 90,
+      "weight": 90.0,
       "sets": 5,
       "reps": 5,
       "rest_seconds": 90
     },
     "Barbell Row": {
-      "weight": 80,
+      "weight": 80.0,
       "sets": 5,
       "reps": 5,
       "rest_seconds": 90
+    },
+    "Side plank": {
+      "weight": 76.0,
+      "sets": 3,
+      "reps": 10,
+      "rest_seconds": 60
     }
   },
   "Workout B": {
