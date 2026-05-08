@@ -128,6 +128,12 @@ def first_exercise(workout_name: str) -> str:
     return list(config[workout_name].keys())[0]
 
 
+def reset_session() -> None:
+    st.session_state.sets_done = []
+    st.session_state.last_set_time = None
+    st.session_state.logged_event_ids = set()
+
+
 # ── Session-state initialisation ──────────────────────────────────────────────
 if "active_workout" not in st.session_state:
     st.session_state.active_workout = workout_names[0]
@@ -147,6 +153,9 @@ if "session_id" not in st.session_state:
 if "logged_event_ids" not in st.session_state:
     st.session_state.logged_event_ids = set()
 
+if "workout_finished" not in st.session_state:
+    st.session_state.workout_finished = False
+
 # ── Title ─────────────────────────────────────────────────────────────────────
 st.title("🏋️ Simple Strength")
 
@@ -163,9 +172,7 @@ selected_workout: str = st.radio(
 if selected_workout != st.session_state.active_workout:
     st.session_state.active_workout = selected_workout
     st.session_state.active_exercise = first_exercise(selected_workout)
-    st.session_state.sets_done = []
-    st.session_state.last_set_time = None
-    st.session_state.logged_event_ids = set()
+    reset_session()
 
 # ── Exercise editor ───────────────────────────────────────────────────────────
 with st.expander("Edit Exercises", expanded=False):
@@ -236,8 +243,7 @@ with st.expander("Edit Exercises", expanded=False):
 
             if st.session_state.active_exercise not in updated_workout:
                 st.session_state.active_exercise = next(iter(updated_workout))
-            st.session_state.sets_done = []
-            st.session_state.last_set_time = None
+            reset_session()
 
             st.success("Exercise changes saved.")
             st.rerun()
@@ -266,9 +272,7 @@ if not selected or selected not in config[st.session_state.active_workout]:
 # Reset progress whenever the user switches exercise
 if selected != st.session_state.active_exercise:
     st.session_state.active_exercise = selected
-    st.session_state.sets_done = []
-    st.session_state.last_set_time = None
-    st.session_state.logged_event_ids = set()
+    reset_session()
 
 ex = config[st.session_state.active_workout][selected]
 total_sets: int = ex["sets"]
@@ -349,10 +353,19 @@ if st.session_state.last_set_time is not None:
             st.balloons()
             st.success("🎉 All sets complete! Great work.")
 
+# ── Finish Workout ────────────────────────────────────────────────────────────
+if st.session_state.workout_finished:
+    st.balloons()
+    st.success("🏁 Workout finished! Great effort today.")
+    st.session_state.workout_finished = False
+
 # ── Reset ─────────────────────────────────────────────────────────────────────
 st.divider()
-if st.button("🔄 Reset Session", use_container_width=True):
-    st.session_state.sets_done = []
-    st.session_state.last_set_time = None
-    st.session_state.logged_event_ids = set()
+col_finish, col_reset = st.columns(2)
+if col_finish.button("🏁 Finish Workout", use_container_width=True, type="primary"):
+    reset_session()
+    st.session_state.workout_finished = True
+    st.rerun()
+if col_reset.button("🔄 Reset Session", use_container_width=True):
+    reset_session()
     st.rerun()
