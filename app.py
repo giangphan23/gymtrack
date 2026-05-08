@@ -99,6 +99,31 @@ def build_set_event_payload(
     }
 
 
+def build_workout_completed_payload(
+    *,
+    session_id: str,
+    workout: str,
+    exercise: str,
+    total_sets: int,
+    reps: int,
+    weight: float,
+    event_id: str,
+) -> dict:
+    return {
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "workout": workout,
+        "exercise": exercise,
+        "set_number": total_sets,
+        "total_sets": total_sets,
+        "reps": reps,
+        "weight": weight,
+        "rest_seconds": 0,
+        "session_id": session_id,
+        "event_id": event_id,
+        "event_type": "workout_completed",
+    }
+
+
 def log_set_to_gsheet(payload: dict) -> bool:
     try:
         webhook_url = st.secrets.get("gsheet_webhook_url")
@@ -317,6 +342,25 @@ for i in range(total_sets):
                 st.session_state.logged_event_ids.add(event_id)
 
         st.session_state.sets_done.append(i)
+
+        if len(st.session_state.sets_done) == total_sets:
+            workout_completed_event_id = (
+                f"{st.session_state.session_id}:"
+                f"{st.session_state.active_workout}:{selected}:completed"
+            )
+            if workout_completed_event_id not in st.session_state.logged_event_ids:
+                completion_payload = build_workout_completed_payload(
+                    session_id=st.session_state.session_id,
+                    workout=st.session_state.active_workout,
+                    exercise=selected,
+                    total_sets=total_sets,
+                    reps=reps,
+                    weight=weight,
+                    event_id=workout_completed_event_id,
+                )
+                if log_set_to_gsheet(completion_payload):
+                    st.session_state.logged_event_ids.add(workout_completed_event_id)
+
         st.session_state.last_set_time = time.time()
         st.rerun()
 
